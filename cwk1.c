@@ -58,7 +58,7 @@ int numCells( int N )
 {
     int i, j, total = 0;
 
-    #pragma omp parallel for
+    #pragma omp parallel for collapse(2)
     for( i=0; i<N; i++ )
         for( j=0; j<N; j++ )
             if( grid[i][j] )
@@ -75,9 +75,12 @@ int numCells( int N )
 void initialiseGrid( int N, int M )
 {
     int cell;
+
+    #pragma omp parallel for 
     for( cell=0; cell<M; cell++ )
     {
-        while( true )       // 'true' is defined in stdbool.
+        int found = 0;
+        while( !found )       // 'true' is defined in stdbool.
         {
             // Get a random location on the grid, not including the outer rows/columns.
             // You may assume rand() is thread-safe for this assignment.
@@ -89,11 +92,13 @@ void initialiseGrid( int N, int M )
             if( i<0 || j<0 || i>=N || j>=N ) continue;
 
             // If currently occupied, return to the start and try again with new values of i and j.
-            if( grid[i][j] ) continue;
-
-            // If not occupied, add the cell and break from the while( true ) loop.
-            grid[i][j] = 1;
-            break;
+            #pragma omp critical
+            {
+                if( !grid[i][j] ) {
+                    grid[i][j] = 1;
+                    found = 1;
+                };
+            }
         }
     }
 }
@@ -106,11 +111,13 @@ void iterateWithOriginalRules( int N )
 
     // For the purposes of this assignment, make a copy of the grid and read this copy when updating the main array grid[]
     // (rather using pointers to alternate between the two arrays, which is not allowed for this assignment).
+    #pragma omp parallel for collapse(2)
     for( i=0; i<N; i++ )
         for( j=0; j<N; j++ )
             gridCopy[i][j] = grid[i][j];
 
     // Apply the rules of Conway's Game of Life. Note that grid squares on the boundary are not updated and will always remain empty.
+    #pragma omp parallel for collapse(2)
     for( i=1; i<N-1; i++ )
         for( j=1; j<N-1; j++ )
         {
@@ -118,7 +125,6 @@ void iterateWithOriginalRules( int N )
             int numNeighbours = gridCopy[i-1][j+1] + gridCopy[i][j+1] + gridCopy[i+1][j+1]
                               + gridCopy[i-1][j  ]                    + gridCopy[i+1][j  ]
                               + gridCopy[i-1][j-1] + gridCopy[i][j-1] + gridCopy[i+1][j-1];
-
             // Apply the update rules.
             if( grid[i][j]==1 )
             {
@@ -127,8 +133,9 @@ void iterateWithOriginalRules( int N )
             else            // i.e. if grid[i][j]==0.
             {
                 if( numNeighbours==3 ) grid[i][j] = 1; 
-            }
+            
         }
+    }
 }
 
 // Iterate using the modified rules as explained in the coursework instructions.
@@ -159,7 +166,7 @@ int main( int argc, char **argv )
 
     // Display the initial grid to terminal. This routine is defined in the extra file.
     printf( "Initial grid.\n" );
-    // displayGrid( grid, N, numCells(N) );         // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
+    displayGrid( grid, N, numCells(N) );         // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
 
     // Also initialise the graphical output if selected and available.
 #ifdef GLFW
@@ -181,7 +188,7 @@ int main( int argc, char **argv )
 
         // Output the current state of the grid to terminal as text.
         printf( "\nGrid after %d iteration(s):\n", iteration+1 );
-        // displayGrid( grid, N, numCells(N) );        // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
+        displayGrid( grid, N, numCells(N) );        // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
 
         // If graphics selected, update the window.
 #ifdef GLFW
@@ -191,7 +198,7 @@ int main( int argc, char **argv )
  #endif
 
         // A short pause before the next iteration. The argument is in microseconds. usleep() is defined in unistd.h
-        usleep( 200000 );
+        // usleep( 200000 );
    }
 
     // Close the graphics window once the user presses escape or 'q'.
