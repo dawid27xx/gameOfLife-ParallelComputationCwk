@@ -62,6 +62,7 @@ int numCells( int N )
     for( i=0; i<N; i++ )
         for( j=0; j<N; j++ )
             if( grid[i][j] )
+                #pragma omp atomic
                 total++;
     
     return total;
@@ -158,7 +159,7 @@ int main( int argc, char **argv )
 
     // Display the initial grid to terminal. This routine is defined in the extra file.
     printf( "Initial grid.\n" );
-    displayGrid( grid, N, numCells(N) );         // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
+    // displayGrid( grid, N, numCells(N) );         // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
 
     // Also initialise the graphical output if selected and available.
 #ifdef GLFW
@@ -180,7 +181,7 @@ int main( int argc, char **argv )
 
         // Output the current state of the grid to terminal as text.
         printf( "\nGrid after %d iteration(s):\n", iteration+1 );
-        displayGrid( grid, N, numCells(N) );        // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
+        // displayGrid( grid, N, numCells(N) );        // DO NOT ALTER THIS LINE - displayGrid() must be called here, as part of the assessment.
 
         // If graphics selected, update the window.
 #ifdef GLFW
