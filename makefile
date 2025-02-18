@@ -5,7 +5,7 @@
 # name of the C-compiler to something that only exists on your system).
 #
 EXE = cwk1
-CC = gcc-14
+CC = gcc
 CCFLAGS = -Wall -fopenmp -lm
 GRAPHICS = NONE
 

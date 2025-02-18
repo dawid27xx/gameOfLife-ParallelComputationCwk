@@ -141,6 +141,29 @@ void iterateWithOriginalRules( int N )
 // Iterate using the modified rules as explained in the coursework instructions.
 void iterateWithModifiedRules( int N )
 {
+    int i, j, redBlack;
+
+    for (redBlack = 0; redBlack < 2; redBlack++) {
+    #pragma omp parallel for
+    for( i=1; i<N-1; i++ )
+        for( j=1; j<N-1; j++ )
+        {
+            if (i % 2 == redBlack) { 
+            // Count the number of neighbours in the von Neumann neighbourhood in the grid copy.
+            int numNeighbours = grid[i][j+1] + grid[i-1][j] + grid[i+1][j] + grid[i][j-1];
+            // Apply the update rules.
+            if( grid[i][j] == 1 )
+            {
+                if( numNeighbours == 0 || numNeighbours == 3 ) grid[i][j] = 0;
+            }
+            else
+            {
+                if( numNeighbours == 2 ) grid[i][j] = 1; 
+            }
+            
+            }
+        }
+    }
 }
 
 
