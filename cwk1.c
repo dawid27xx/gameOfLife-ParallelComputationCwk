@@ -18,7 +18,7 @@
 // examples from Lectures 3 and 13. To select this, build with
 //
 // > make GRAPHICS=GLFW
-//
+///
 // This should work on School machines, but you may need to modify the location of OpenGL/GLFW
 // libraries in the makefile to work on your system. Note you do not need to use this graphical
 // output for this assignment; the terminal output will suffice.
