@@ -54,16 +54,13 @@ int **gridCopy;
 // However, please retain the loop ranges as in the serial code below for your
 // solution.
 //
-
 int numCells( int N )
 {
     int i, j, total = 0;
 
-    #pragma omp parallel for collapse(2)
     for( i=0; i<N; i++ )
         for( j=0; j<N; j++ )
             if( grid[i][j] )
-                #pragma omp atomic
                 total++;
     
     return total;
@@ -76,27 +73,25 @@ int numCells( int N )
 void initialiseGrid( int N, int M )
 {
     int cell;
-
-    #pragma omp parallel for 
     for( cell=0; cell<M; cell++ )
     {
-        int foundEmpty = 0;
-        while( !foundEmpty ) 
+        while( true )       // 'true' is defined in stdbool.
         {
-
+            // Get a random location on the grid, not including the outer rows/columns.
+            // You may assume rand() is thread-safe for this assignment.
             int
                 i = 1 + (N-2) * 1.0*rand()/RAND_MAX,
                 j = 1 + (N-2) * 1.0*rand()/RAND_MAX;
 
+            // Check the indices are in the allowed range, as rand() can occasionally return spurious values.
             if( i<0 || j<0 || i>=N || j>=N ) continue;
 
-            #pragma omp critical
-            {
-                if( !grid[i][j] ) {
-                    grid[i][j] = 1;
-                    foundEmpty = 1;
-                };
-            }
+            // If currently occupied, return to the start and try again with new values of i and j.
+            if( grid[i][j] ) continue;
+
+            // If not occupied, add the cell and break from the while( true ) loop.
+            grid[i][j] = 1;
+            break;
         }
     }
 }
@@ -109,25 +104,25 @@ void iterateWithOriginalRules( int N )
 
     // For the purposes of this assignment, make a copy of the grid and read this copy when updating the main array grid[]
     // (rather using pointers to alternate between the two arrays, which is not allowed for this assignment).
-    #pragma omp parallel for collapse(2)
     for( i=0; i<N; i++ )
         for( j=0; j<N; j++ )
             gridCopy[i][j] = grid[i][j];
 
     // Apply the rules of Conway's Game of Life. Note that grid squares on the boundary are not updated and will always remain empty.
-    #pragma omp parallel for collapse(2)
     for( i=1; i<N-1; i++ )
         for( j=1; j<N-1; j++ )
         {
+            // Count the number of neighbours in the Moore neighbourhood in the grid copy.
             int numNeighbours = gridCopy[i-1][j+1] + gridCopy[i][j+1] + gridCopy[i+1][j+1]
                               + gridCopy[i-1][j  ]                    + gridCopy[i+1][j  ]
                               + gridCopy[i-1][j-1] + gridCopy[i][j-1] + gridCopy[i+1][j-1];
 
+            // Apply the update rules.
             if( grid[i][j]==1 )
             {
-                if( numNeighbours<2 || numNeighbours>3 ) grid[i][j] = 0;        
+                if( numNeighbours<2 || numNeighbours>3 ) grid[i][j] = 0;        // ... else grid[i][j] remains 1.
             }
-            else           
+            else            // i.e. if grid[i][j]==0.
             {
                 if( numNeighbours==3 ) grid[i][j] = 1; 
             }
@@ -137,29 +132,6 @@ void iterateWithOriginalRules( int N )
 // Iterate using the modified rules as explained in the coursework instructions.
 void iterateWithModifiedRules( int N )
 {
-    int i, j, redBlack;
-
-    for (redBlack = 0; redBlack < 2; redBlack++) {
-    #pragma omp parallel for collapse(2)
-        for( i=1; i<N-1; i++ )
-            for( j=1; j<N-1; j++ )
-            {
-                if ((i+j) % 2 == redBlack) { 
-                // Count the number of neighbours in the von neumann neighbourhood in the grid copy.
-                int numNeighbours = grid[i][j+1] + grid[i-1][j] + grid[i+1][j] + grid[i][j-1];
-                // Apply the update rules.
-                if( grid[i][j] == 1 )
-                {
-                    if( numNeighbours == 0 || numNeighbours == 3 ) grid[i][j] = 0;
-                }
-                else
-                {
-                    if( numNeighbours == 2 ) grid[i][j] = 1; 
-                }
-                
-                }
-            }
-        }
 }
 
 
@@ -217,7 +189,7 @@ int main( int argc, char **argv )
  #endif
 
         // A short pause before the next iteration. The argument is in microseconds. usleep() is defined in unistd.h
-        // usleep( 200000 );
+        usleep( 200000 );
    }
 
     // Close the graphics window once the user presses escape or 'q'.
